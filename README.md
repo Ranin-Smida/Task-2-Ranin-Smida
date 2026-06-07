@@ -1,20 +1,20 @@
-# To-Do List GUI
+# Smart Expense Tracker
 
-A small desktop To-Do list application built with CustomTkinter. Add, delete,
-and clear tasks with a simple, colorful UI.
+A desktop expense tracker built with CustomTkinter. Add expenses, set a budget,
+see remaining budget, and review history in a simple GUI.
 
 ## Requirements
 
 - Python 3.8+
-- `customtkinter` (installed via pip)
+- `customtkinter`
 
 ## Install
 
-Create a virtual environment (recommended) and install dependencies:
+Create a virtual environment on Windows and install the dependency:
 
 ```bash
 python -m venv .venv
-source .venv/Scripts/activate    # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -26,14 +26,13 @@ python main.py
 
 ## Features
 
-- Add new tasks with validation for empty or duplicate entries
-- Toggle task completion
-- Delete individual tasks
-- Clear all tasks with confirmation
+- Add expenses with category selection
+- Set and track a budget
+- View total spent and remaining budget
+- Clear all expenses with confirmation
+- Reset the input fields
 
 ## Files
 
-- `main.py` — application entrypoint (To-Do GUI)
-- `requirements.txt` — Python dependencies
-
-If you want this project as a separate module file, I can add `todo_gui.py` too.
+- `main.py` - expense tracker application
+- `requirements.txt` - Python dependency list

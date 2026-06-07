@@ -1,168 +1,310 @@
 import customtkinter as ctk
 from tkinter import messagebox
+import json
+import os
 
 ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
-app = ctk.CTk()
-app.title("To-Do List")
-app.geometry("500x600")
+FONT_FAMILY = "Georgia"
 
-BEIGE = "#F5F5DC"
-PINK = "#FF69B4"
-LIGHT_PINK = "#FFB6C1"
-DARK_PINK = "#DB7093"
+FILE_NAME = "expenses.json"
 
-app.configure(fg_color=BEIGE)
 
-tasks = [
-    {"task": "Do homework", "status": True},
-    {"task": "Clean room", "status": False},
-    {"task": "Go gym", "status": False}
-]
+expenses = []
+budget = 0
 
-def refresh_tasks():
-    for widget in task_frame.winfo_children():
-        widget.destroy()
 
-    if not tasks:
-        empty_label = ctk.CTkLabel(
-            task_frame,
-            text="No tasks yet 📭",
-            font=("Segoe Script", 16),
-            text_color=DARK_PINK
-        )
-        empty_label.pack(pady=20)
+if os.path.exists(FILE_NAME):
+    with open(FILE_NAME, "r") as file:
+        expenses = json.load(file)
+
+
+def save_data():
+    with open(FILE_NAME, "w") as file:
+        json.dump(expenses, file)
+
+
+def add_expense():
+    amount = amount_entry.get()
+    category = category_menu.get()
+
+    if amount == "":
+        messagebox.showerror("Error", "Enter an amount")
         return
 
-    for index, task in enumerate(tasks):
+    try:
+        amount = float(amount)
 
-        row = ctk.CTkFrame(task_frame, fg_color=LIGHT_PINK)
-        row.pack(fill="x", pady=5, padx=5)
+        expense = {
+            "amount": amount,
+            "category": category
+        }
 
-        var = ctk.BooleanVar(value=task["status"])
+        expenses.append(expense)
 
-        def toggle_status(i=index, v=var):
-            tasks[i]["status"] = v.get()
+        save_data()
 
-        checkbox = ctk.CTkCheckBox(
-            row,
-            text=task["task"],
-            variable=var,
-            command=toggle_status,
-            font=("Segoe Script", 16),
-            text_color="black",
-            fg_color=PINK,
-            hover_color=DARK_PINK
+        messagebox.showinfo("Success", "Expense Added")
+
+        amount_entry.delete(0, "end")
+
+        update_total()
+        show_history()
+
+    except:
+        messagebox.showerror("Error", "Enter a valid number")
+
+
+def update_total():
+    total = 0
+
+    for expense in expenses:
+        total = total + expense["amount"]
+
+    total_label.configure(text=f"Total Spent: {total} DT")
+
+    if budget > 0:
+        remaining = budget - total
+
+        budget_label.configure(
+            text=f"Remaining Budget: {remaining} DT"
         )
-        checkbox.pack(side="left", padx=10, pady=10)
 
-        delete_btn = ctk.CTkButton(
-            row,
-            text="Delete",
-            width=80,
-            fg_color=PINK,
-            hover_color=DARK_PINK,
-            text_color="white",
-            font=("Segoe Script", 12),
-            command=lambda i=index: delete_task(i)
-        )
-        delete_btn.pack(side="right", padx=10)
+        if total > budget:
+            warning_label.configure(
+                text=" Budget Exceeded!",
+                text_color="red"
+            )
+        else:
+            warning_label.configure(text="")
 
 
-def add_task():
-    task_name = entry.get().strip()
+def set_budget():
+    global budget
 
-    if task_name == "":
-        messagebox.showerror("Error", "Task cannot be empty.")
+    value = budget_entry.get()
+
+    if value == "":
         return
 
-    for task in tasks:
-        if task["task"].lower() == task_name.lower():
-            messagebox.showwarning("Warning", "Task already exists.")
-            return
+    try:
+        budget = float(value)
 
-    tasks.append({
-        "task": task_name,
-        "status": False
-    })
+        messagebox.showinfo(
+            "Budget",
+            f"Budget set to {budget} DT"
+        )
 
-    entry.delete(0, "end")
-    refresh_tasks()
+        update_total()
 
-
-def delete_task(index):
-    if 0 <= index < len(tasks):
-        tasks.pop(index)
-        refresh_tasks()
+    except:
+        messagebox.showerror(
+            "Error",
+            "Enter a valid budget"
+        )
 
 
-def clear_all():
-    if not tasks:
-        messagebox.showinfo("Info", "Task list already empty.")
-        return
+def show_history():
+    history_box.delete("0.0", "end")
 
-    confirm = messagebox.askyesno(
+    for i, expense in enumerate(expenses, start=1):
+        text = (
+            f"{i}. "
+            f"{expense['category']} - "
+            f"{expense['amount']} DT\n"
+        )
+
+        history_box.insert("end", text)
+
+
+def clear_expenses():
+    global expenses
+
+    answer = messagebox.askyesno(
         "Confirm",
-        "Are you sure you want to delete all tasks?"
+        "Delete all expenses?"
     )
 
-    if confirm:
-        tasks.clear()
-        refresh_tasks()
+    if answer:
+        expenses = []
 
-# ---------------- UI ----------------
+        save_data()
 
-title = ctk.CTkLabel(
+        update_total()
+        show_history()
+
+
+def reset_inputs():
+    amount_entry.delete(0, "end")
+    budget_entry.delete(0, "end")
+    category_menu.set("Food")
+    warning_label.configure(text="")
+
+
+app = ctk.CTk()
+app.geometry("600x1080")
+app.title("Smart Expense Tracker")
+app.configure(fg_color="#F7F3EE")
+
+title_label = ctk.CTkLabel(
     app,
-    text=" TO-DO LIST",
-    font=("Segoe Script", 30, "bold"),
-    text_color=DARK_PINK
+    text="Smart Expense Tracker",
+    font=(FONT_FAMILY, 32, "bold"),
+    text_color="#2E2A27"
 )
-title.pack(pady=20)
 
-entry_frame = ctk.CTkFrame(app, fg_color=BEIGE)
-entry_frame.pack(pady=10, padx=20, fill="x")
+title_label.pack(pady=20)
 
-entry = ctk.CTkEntry(
-    entry_frame,
-    placeholder_text="Enter a new task...",
+
+budget_entry = ctk.CTkEntry(
+    app,
+    placeholder_text="Set your budget",
     height=40,
-    font=("Segoe Script", 15),
-    fg_color="white",
-    border_color=PINK,
-    text_color="black"
+    font=(FONT_FAMILY, 16),
+    fg_color="#FFFFFF",
+    text_color="#2E2A27",
+    border_color="#C9B8A8"
 )
-entry.pack(side="left", padx=10, pady=10, fill="x", expand=True)
 
-add_btn = ctk.CTkButton(
-    entry_frame,
-    text="Add",
-    width=100,
-    fg_color=PINK,
-    hover_color=DARK_PINK,
-    font=("Segoe Script", 14),
-    command=add_task   # ✅ FIXED
-)
-add_btn.pack(side="right", padx=10)
+budget_entry.pack(pady=10, padx=30, fill="x")
 
-clear_btn = ctk.CTkButton(
+budget_button = ctk.CTkButton(
     app,
-    text="Clear All",
-    fg_color=DARK_PINK,
-    hover_color="red",
-    font=("Segoe Script", 14),
-    command=clear_all
+    text="Set Budget",
+    command=set_budget,
+    height=42,
+    font=(FONT_FAMILY, 18, "bold"),
+    fg_color="#3A6EA5",
+    hover_color="#315E8D"
 )
-clear_btn.pack(pady=10)
 
-task_frame = ctk.CTkScrollableFrame(
+budget_button.pack(pady=(5, 10))
+
+expense_row = ctk.CTkFrame(app, fg_color="transparent")
+expense_row.pack(pady=10, fill="x", padx=30)
+
+amount_entry = ctk.CTkEntry(
+    expense_row,
+    placeholder_text="Enter expense amount",
+    height=40,
+    font=(FONT_FAMILY, 16),
+    fg_color="#FFFFFF",
+    text_color="#2E2A27",
+    border_color="#C9B8A8"
+)
+
+amount_entry.pack(side="left", padx=(0, 12), fill="x", expand=True)
+
+category_menu = ctk.CTkOptionMenu(
+    expense_row,
+    values=[
+        "Food",
+        "Transport",
+        "Shopping",
+        "Bills",
+        "Entertainment",
+        "Other"
+    ],
+    height=40,
+    font=(FONT_FAMILY, 16),
+    fg_color="#E6D5C6",
+    button_color="#C9B8A8",
+    button_hover_color="#B59E8B",
+    text_color="#2E2A27"
+)
+category_menu.pack(side="right")
+
+add_button = ctk.CTkButton(
     app,
-    width=450,
-    height=350,
-    fg_color=BEIGE
+    text="Add Expense",
+    command=add_expense,
+    height=42,
+    font=(FONT_FAMILY, 18, "bold"),
+    fg_color="#1E7A6E",
+    hover_color="#18665C"
 )
-task_frame.pack(padx=20, pady=10, fill="both", expand=True)
+add_button.pack(pady=(5, 10))
 
-refresh_tasks()
+total_label = ctk.CTkLabel(
+    app,
+    text="Total Spent: 0 DT",
+    font=(FONT_FAMILY, 22, "bold"),
+    text_color="#2E2A27"
+)
+
+total_label.pack(pady=15)
+
+
+budget_label = ctk.CTkLabel(
+    app,
+    text="Remaining Budget: 0 DT",
+    font=(FONT_FAMILY, 18),
+    text_color="#2E2A27"
+)
+
+budget_label.pack()
+
+
+warning_label = ctk.CTkLabel(
+    app,
+    text="",
+    font=(FONT_FAMILY, 18, "bold"),
+    text_color="#B0452D"
+)
+
+warning_label.pack(pady=5)
+
+
+history_title = ctk.CTkLabel(
+    app,
+    text="Expense History",
+    font=(FONT_FAMILY, 22, "bold"),
+    text_color="#2E2A27"
+)
+
+history_title.pack(pady=10)
+
+history_box = ctk.CTkTextbox(
+    app,
+    width=440,
+    height=220,
+    font=(FONT_FAMILY, 15),
+    fg_color="#FFFFFF",
+    text_color="#2E2A27",
+    border_color="#C9B8A8"
+)
+
+history_box.pack(pady=10)
+
+
+reset_button = ctk.CTkButton(
+    app,
+    text="Reset Inputs",
+    fg_color="#6C7A89",
+    hover_color="#5A6673",
+    command=reset_inputs,
+    height=40,
+    font=(FONT_FAMILY, 16, "bold")
+)
+
+reset_button.pack(pady=(5, 8))
+
+
+clear_button = ctk.CTkButton(
+    app,
+    text="Clear Expenses",
+    fg_color="#C0412D",
+    hover_color="#A33626",
+    command=clear_expenses,
+    height=40,
+    font=(FONT_FAMILY, 16, "bold")
+)
+
+clear_button.pack(pady=15)
+
+
+update_total()
+show_history()
 
 app.mainloop()
